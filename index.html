@@ -9,6 +9,9 @@
             --primary-color: #4285F4;
             --primary-hover: #3367D6;
             --success-color: #34A853;
+            --danger-color: #d93025;
+            --danger-bg: #fce8e6;
+            --danger-border: #fad2cf;
             --bg-color: #f4f7f9;
             --card-bg: #ffffff;
             --text-main: #202124;
@@ -23,6 +26,10 @@
             margin: 0;
             padding: 2rem;
             line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            box-sizing: border-box;
         }
 
         .header-section {
@@ -71,6 +78,7 @@
             gap: 2rem;
             max-width: 1200px;
             margin: 0 auto;
+            flex: 1;
         }
 
         @media (max-width: 850px) {
@@ -134,6 +142,17 @@
             min-height: 120px;
         }
 
+        .warning-msg {
+            background-color: var(--danger-bg);
+            color: var(--danger-color);
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            border: 1px solid var(--danger-border);
+            display: none;
+        }
+
         .output-group { 
             margin-bottom: 1.5rem; 
         }
@@ -195,6 +214,19 @@
             color: #137333;
             border-color: #ceead6;
         }
+
+        .site-footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            width: 100%;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
     </style>
 </head>
 <body>
@@ -213,6 +245,9 @@
                 <label for="orgIds">Authorized Organization IDs:</label>
                 <div class="hint">Enter one or more GCP Organization IDs (comma or newline separated)</div>
                 <textarea id="orgIds" rows="6" placeholder="e.g. 123456789, 987654321"></textarea>
+                <div id="validationWarning" class="warning-msg">
+                    <strong>Warning:</strong> Organization IDs must be numbers and must not have leading zeros.
+                </div>
             </div>
 
             <div class="input-group">
@@ -274,6 +309,10 @@
         </div>
     </div>
 
+    <footer class="site-footer">
+        Hosted by GitHub. <a class="inline-link" href="https://github.com/jay0lee/gcp-header-generator" target="_blank" rel="noopener noreferrer">PRs are welcome!</a>
+    </footer>
+
     <script>
         const iconCopy = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z"/></svg>`;
         const iconCheck = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z"/></svg>`;
@@ -290,6 +329,7 @@
         function updateOutputs() {
             const orgIdsInput = document.getElementById('orgIds').value;
             const options = document.getElementById('options').value;
+            const warningEl = document.getElementById('validationWarning');
             
             const rawIds = orgIdsInput.split(/[\n,]+/).map(id => id.trim()).filter(id => id.length > 0);
             
@@ -298,13 +338,29 @@
                 document.getElementById('encodedOutput').textContent = "Waiting for input...";
                 document.getElementById('fullHeader').textContent = "Waiting for input...";
                 document.getElementById('chromePolicyOutput').textContent = "Waiting for input...";
+                warningEl.style.display = 'none';
                 return;
             }
 
+            let hasValidationError = false;
+            
             const resources = rawIds.map(id => {
                 const numericId = id.replace(/^organizations\//, '');
+                
+                // Validate: must be digits only and cannot start with 0
+                if (!/^[1-9]\d*$/.test(numericId)) {
+                    hasValidationError = true;
+                }
+
                 return `organizations/${numericId}`;
             });
+
+            // Toggle warning display
+            if (hasValidationError) {
+                warningEl.style.display = 'block';
+            } else {
+                warningEl.style.display = 'none';
+            }
 
             const headerObj = {
                 resources: resources,
